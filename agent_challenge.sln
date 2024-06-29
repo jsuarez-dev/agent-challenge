@@ -6,10 +6,17 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KernelAgent", "KernelAgent\KernelAgent.csproj", "{21D85E5D-A984-4045-A513-800EB7979F89}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebConnection", "WebConnection\WebConnection.csproj", "{57CD2669-6A3F-4C3F-BCA5-0EEBA36FE897}"
+	ProjectSection(ProjectDependencies) = postProject
+		{21D85E5D-A984-4045-A513-800EB7979F89} = {21D85E5D-A984-4045-A513-800EB7979F89}
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{175F4B4A-19D8-4A87-A939-7A303A82FFC0}"
 	ProjectSection(SolutionItems) = preProject
+		.env = .env
 		.env_example = .env_example
+		.gitignore = .gitignore
+		load-env.ps1 = load-env.ps1
+		load-env.sh = load-env.sh
 		README.md = README.md
 	EndProjectSection
 EndProject
