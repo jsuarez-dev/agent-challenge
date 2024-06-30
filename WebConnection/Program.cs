@@ -1,5 +1,4 @@
 ﻿
-using System.Threading;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Playwright;
 using KernelAgent;
@@ -22,18 +21,29 @@ class Program
         var page = await browser.NewPageAsync();
         await page.GotoAsync("https://neal.fun/password-game/");
 
-        List<string> rules = new List<string>();
         string password = InitPassword();
         for (int i = 0; i < 10; i++)
         {
+            var listOfRulesAchived = new List<string>();
+            var listOfRulesNoAchived = new List<string>();
             await page.Locator(".ProseMirror").FillAsync(password);
-            foreach (var rule in await page.Locator(".rule-desc").AllAsync())
+            foreach (var rule in await page.Locator("div.rule").AllAsync())
             {
-                string textRule = await rule.TextContentAsync();
-                rules.Add(textRule);
+                var names = await rule.EvaluateAsync("node => node.className");
+
+                if (names.ToString().IndexOf("rule-error") != -1)
+                {
+                    string ruleText = await rule.Locator("div.rule-desc").TextContentAsync();
+                    listOfRulesNoAchived.Add($"- {ruleText}"); 
+                }
+                else
+                {
+                    string ruleText = await rule.Locator("div.rule-desc").TextContentAsync();
+                    listOfRulesAchived.Add($"- {ruleText}"); 
+                }
             }
             Thread.Sleep(2000);
-            password = await agent.GeneratePassword(password, rules);
+            password = await agent.GeneratePassword(password, listOfRulesAchived, listOfRulesNoAchived);
         }
     }
 
