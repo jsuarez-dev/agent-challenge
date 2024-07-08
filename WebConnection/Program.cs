@@ -34,12 +34,12 @@ class Program
                 if (names.ToString().IndexOf("rule-error") != -1)
                 {
                     string ruleText = await rule.Locator("div.rule-desc").TextContentAsync();
-                    listOfRulesNoAchived.Add($"- {ruleText}"); 
+                    listOfRulesNoAchived.Add($"- {ruleText}");
                 }
                 else
                 {
                     string ruleText = await rule.Locator("div.rule-desc").TextContentAsync();
-                    listOfRulesAchived.Add($"- {ruleText}"); 
+                    listOfRulesAchived.Add($"- {ruleText}");
                 }
             }
             Thread.Sleep(2000);

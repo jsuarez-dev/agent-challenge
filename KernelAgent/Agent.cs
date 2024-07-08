@@ -15,14 +15,14 @@ public class Agent
     {
         var builder = Kernel.CreateBuilder();
         builder.AddOpenAIChatCompletion("gpt-3.5-turbo", apiKey);
-        
+
         kernel = builder.Build();
 
         var prompt = @"
         you are a agent which generate a improve Passwords
            
         If the rules ask for 'digits' means you will need to give a 0-9.
-        If the rules ask for operation between the digits, consider adding more digits.
+        If the rules ask for digits add 12, you could suggest 66 or 93 or 156.
         
         you suggested this password '{{$Password}}', that password satisfied this rules:
         
@@ -56,10 +56,11 @@ public class Agent
         }
 
         FunctionResult functionResult = await kernel.InvokeAsync(
-            kernelFunction, 
-            new() { 
-                ["AchivedRules"] = sbAchived.ToString(), 
-                ["NoAchivedRules"] = sbNoAchived.ToString(), 
+            kernelFunction,
+            new()
+            {
+                ["AchivedRules"] = sbAchived.ToString(),
+                ["NoAchivedRules"] = sbNoAchived.ToString(),
                 ["Password"] = password
             });
 
