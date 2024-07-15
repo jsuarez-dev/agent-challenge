@@ -21,8 +21,10 @@ class Program
         var page = await browser.NewPageAsync();
         await page.GotoAsync("https://neal.fun/password-game/");
 
+        const string ImageFilePath = "screenshot.png";
+
         string password = InitPassword();
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < 2; i++)
         {
             var listOfRulesAchived = new List<string>();
             var listOfRulesNoAchived = new List<string>();
@@ -44,7 +46,16 @@ class Program
             }
             Thread.Sleep(2000);
             password = await agent.GeneratePassword(password, listOfRulesAchived, listOfRulesNoAchived);
+            await page.ScreenshotAsync(new()
+            {
+                Path = ImageFilePath,
+                FullPage = true,
+            });
         }
+
+        await agent.GetTextFromImage(ImageFilePath);
+        Console.WriteLine(await agent.GetTextFromImageSK(ImageFilePath));
+
     }
 
     static string InitPassword()

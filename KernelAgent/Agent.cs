@@ -1,7 +1,14 @@
 ﻿
+
+using System.Text;
+using System.Reflection;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
-using System.Text;
+using Microsoft.SemanticKernel.ImageToText;
+using Microsoft.SemanticKernel.ChatCompletion;
+
+
+#pragma warning disable SKEXP0001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
 
 namespace KernelAgent;
 
@@ -10,11 +17,13 @@ public class Agent
 
     Kernel kernel;
     KernelFunction kernelFunction;
+    ImageApi imageApi;
+    IChatCompletionService chatCompletion;
 
     public Agent(string apiKey)
     {
         var builder = Kernel.CreateBuilder();
-        builder.AddOpenAIChatCompletion("gpt-3.5-turbo", apiKey);
+        builder.AddOpenAIChatCompletion("gpt-4o", apiKey);
 
         kernel = builder.Build();
 
@@ -39,6 +48,9 @@ public class Agent
 
         kernelFunction = kernel.CreateFunctionFromPrompt(prompt);
 
+        this.chatCompletion = kernel.GetRequiredService<IChatCompletionService>();
+
+        this.imageApi = new ImageApi(apiKey);
     }
 
     public async Task<string> GeneratePassword(string password, List<string> achivedRules, List<string> noAchivedRules)
@@ -65,10 +77,37 @@ public class Agent
             });
 
         string result = functionResult.ToString();
-#pragma warning disable SKEXP0001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
         Console.WriteLine(functionResult.RenderedPrompt);
-#pragma warning restore SKEXP0001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
 
         return result;
+    }
+
+
+    public async Task<string> GetTextFromImage(string ImageFilePath)
+    {
+        string responce = await this.imageApi.SendImage(ImageFilePath);
+        Console.WriteLine(responce);
+        return responce;
+    }
+
+    public async Task<string> GetTextFromImageSK(string ImageFilePath)
+    {
+        string systemPrompt = "you are a friendly assistant that helps describe images.";
+        string userInput = "What is this image?";
+
+        var imageBytes = File.ReadAllBytes(ImageFilePath);
+
+        var chatHistory = new ChatHistory(systemPrompt);
+        var base64_image = Convert.ToBase64String(imageBytes);
+
+        chatHistory.AddUserMessage(
+                [
+                new TextContent(userInput),
+                new ImageContent(new Uri($"data:image/jpeg;base64,{base64_image}")),
+                ]);
+
+        var reply = await chatCompletion.GetChatMessageContentAsync(chatHistory);
+
+        return reply.Content;
     }
 }
