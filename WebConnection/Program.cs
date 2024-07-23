@@ -14,6 +14,11 @@ class Program
 
         var apiKey = config["OPENAI_API_KEY"];
 
+        if (apiKey == null)
+        {
+            throw new NullReferenceException("Apu Key not define");
+        }
+
         Agent agent = new Agent(apiKey);
 
         using var playwright = await Playwright.CreateAsync();

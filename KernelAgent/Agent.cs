@@ -1,7 +1,21 @@
 ﻿
 using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.Services;
+using Microsoft.SemanticKernel.Agents;
+using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 using System.Text;
+using System.Text.Json;
+using System.Diagnostics;
+using System.ComponentModel;
+using OpenTelemetry;
+using OpenTelemetry.Logs;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 
 #pragma warning disable SKEXP0001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
 namespace KernelAgent;
@@ -10,64 +24,168 @@ public class Agent
 {
 
     Kernel kernel;
-    KernelFunction kernelFunction;
+    ChatHistory chatHistory;
+    IChatCompletionService chatCompletionService;
+
+    private const LogLevel MinLogLevel = LogLevel.Trace;
+
 
     public Agent(string apiKey)
     {
+        var resourceBuilder = ResourceBuilder
+                    .CreateDefault()
+                    .AddService("TelemetryExample");
+
+        using var traceProvider = Sdk.CreateTracerProviderBuilder()
+            .SetResourceBuilder(resourceBuilder)
+            .AddSource("Microsoft.SemanticKernel*")
+            .AddSource("Telemetry.Example")
+            .AddOtlpExporter(options => options.Endpoint = new Uri("http://localhost:4317"))
+            .Build();
+
+        using var meterProvider = Sdk.CreateMeterProviderBuilder()
+            .SetResourceBuilder(resourceBuilder)
+            .AddMeter("Microsoft.SemanticKernel*")
+            .AddOtlpExporter(options => options.Endpoint = new Uri("http://localhost:4317"))
+            .Build();
+
+        using var loggerFactory = LoggerFactory.Create(builder =>
+        {
+            // Add OpenTelemetry as a logging provider
+            builder.AddOpenTelemetry(options =>
+            {
+                options.SetResourceBuilder(resourceBuilder);
+                options.AddOtlpExporter(options => options.Endpoint = new Uri("http://localhost:4317"));
+                // Format log messages. This is default to false.
+                options.IncludeFormattedMessage = true;
+                options.IncludeScopes = true;
+            });
+            builder.SetMinimumLevel(MinLogLevel);
+        });
+
+
+
         var builder = Kernel.CreateBuilder();
-        builder.AddOpenAIChatCompletion("gpt-3.5-turbo", apiKey);
+
+        builder.Services.AddSingleton(loggerFactory);
+
+        builder.Services.AddOpenAIChatCompletion("gpt-4", apiKey);
+
+        //KernelPlugin mathPlugin = KernelPluginFactory.CreateFromType<MathPlugin>("Math");
+        builder.Services.AddSingleton<MyMathPlugin>();
+
+        builder.Plugins.AddFromObject(new MyMathPlugin());
 
         kernel = builder.Build();
 
-        var prompt = @"
-        you are a agent which generate a improve Passwords
-           
-        If the rules ask for 'digits' means you will need to give a 0-9.
-        If the rules ask for digits add 12, you could suggest 66 or 93 or 156.
+        chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();
+
+
+        const string example = """
+        You are a helpfull assistand that generate passwords
         
-        you suggested this password '{{$Password}}', that password satisfied this rules:
-        
-        {{$AchivedRules}}
+        Exmaple:
 
-        But not this rules:
-           
-        {{$NoAchivedRules}}
+        Rules:
+        - Your password must be at least 5 characters.
+        - Your password must include a special character.
+        - Your password must include a number.
+        - Your password must include an uppercase letter.
+        - The digits in your password must add up to 15.
 
-        Make the minimal changes to the suggested password to achieve all rules 
+        Password: Random!528
 
-        Only respond with the password.
-        ";
+        """;
 
-        kernelFunction = kernel.CreateFunctionFromPrompt(prompt);
+        chatHistory = new ChatHistory();
+        chatHistory.Add(
+                new()
+                {
+                    Role = AuthorRole.System,
+                    Content = example
+                });
+
 
     }
 
     public async Task<string> GeneratePassword(string password, List<string> achivedRules, List<string> noAchivedRules)
     {
-        StringBuilder sbAchived = new StringBuilder();
+        StringBuilder sbMessage = new StringBuilder();
+
+        sbMessage.AppendLine("Rules:");
         foreach (var rule in achivedRules)
         {
-            sbAchived.AppendLine(rule);
+            sbMessage.AppendLine(rule);
         }
-
-        StringBuilder sbNoAchived = new StringBuilder();
         foreach (var rule in noAchivedRules)
         {
-            sbNoAchived.AppendLine(rule);
+            sbMessage.AppendLine(rule);
+
         }
 
-        FunctionResult functionResult = await kernel.InvokeAsync(
-            kernelFunction,
-            new()
-            {
-                ["AchivedRules"] = sbAchived.ToString(),
-                ["NoAchivedRules"] = sbNoAchived.ToString(),
-                ["Password"] = password
-            });
+        sbMessage.AppendLine("Only anwser the password");
+        sbMessage.AppendLine("Password:");
 
-        string result = functionResult.ToString();
-        Console.WriteLine(functionResult.RenderedPrompt);
+        chatHistory.Add(
+                new()
+                {
+                    Role = AuthorRole.User,
+                    Content = sbMessage.ToString()
+                });
 
-        return result;
+
+        OpenAIPromptExecutionSettings openAIPromptExecutionSettings = new()
+        {
+            ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions
+        };
+
+        var responce = await chatCompletionService.GetChatMessageContentAsync(
+                chatHistory,
+                kernel: kernel
+                //executionSettings: openAIPromptExecutionSettings
+                );
+
+
+        return responce.ToString();
     }
+
+    public async Task<string> AskQ(string question)
+    {
+
+        chatHistory.Add(
+                new()
+                {
+                    Role = AuthorRole.User,
+                    Content = question
+                });
+
+
+        OpenAIPromptExecutionSettings openAIPromptExecutionSettings = new()
+        {
+            ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions
+        };
+
+        var responce = await chatCompletionService.GetChatMessageContentAsync(
+                chatHistory,
+                executionSettings: openAIPromptExecutionSettings,
+                kernel: kernel
+                );
+
+
+        return responce.ToString();
+    }
+}
+
+public class MyMathPlugin
+{
+
+    [KernelFunction, Description("Add two numbers")]
+    public double Add(
+        [Description("The first number to add")] double number1,
+        [Description("The second number to add")] double number2
+    )
+    {
+        return number1 + number2;
+    }
+
 }
