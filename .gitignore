@@ -6,6 +6,7 @@
 # dotenv files
 .env
 *.png
+*.jpeg
 
 # User-specific files
 *.rsuser

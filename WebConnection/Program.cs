@@ -14,6 +14,11 @@ class Program
 
         var apiKey = config["OPENAI_API_KEY"];
 
+        if (apiKey == null)
+        {
+            throw new NullReferenceException("Apu Key not define");
+        }
+
         Agent agent = new Agent(apiKey);
 
         using var playwright = await Playwright.CreateAsync();
@@ -24,7 +29,7 @@ class Program
         const string ImageFilePath = "screenshot.png";
 
         string password = InitPassword();
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < 6; i++)
         {
             var listOfRulesAchived = new List<string>();
             var listOfRulesNoAchived = new List<string>();
@@ -46,20 +51,20 @@ class Program
             }
             Thread.Sleep(2000);
             password = await agent.GeneratePassword(password, listOfRulesAchived, listOfRulesNoAchived);
+
+
             await page.ScreenshotAsync(new()
             {
                 Path = ImageFilePath,
-                FullPage = true,
             });
         }
 
-        await agent.GetTextFromImage(ImageFilePath);
         Console.WriteLine(await agent.GetTextFromImageSK(ImageFilePath));
 
     }
 
     static string InitPassword()
     {
-        return "johan";
+        return "monkie";
     }
 }

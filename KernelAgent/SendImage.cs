@@ -20,6 +20,7 @@ public class ImageApi
         this.ApiKey = ApiKey;
     }
 
+
     public async Task<string> SendImage(string imagePath)
     {
         // Read the image file and convert it to a Base64 string
@@ -35,7 +36,7 @@ public class ImageApi
         return Convert.ToBase64String(imageBytes);
     }
 
-    async Task<string> SendImageToApi(string base64Image)
+    public async Task<string> SendImageToApi(string base64Image)
     {
         using (HttpClient client = new HttpClient())
         {
