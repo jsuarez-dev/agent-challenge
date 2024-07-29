@@ -25,8 +25,6 @@ public class UnitTestKernel : IDisposable
         {
             throw new NullReferenceException("Define the path of the images");
         }
-        
-        
 
         agent = new Agent(apiKey);
     }
@@ -35,7 +33,7 @@ public class UnitTestKernel : IDisposable
     {
         Console.WriteLine("some data");
     }
-    
+
     [Fact]
     public void TestAddFunction()
     {
@@ -70,7 +68,7 @@ public class UnitTestKernel : IDisposable
         password = "randIjom0V";
         mul = math.MultiplyRomanNumerals(password);
         Assert.Equal(5, mul);
-        
+
         password = "randjom0";
         mul = math.MultiplyRomanNumerals(password);
         Assert.Equal(0, mul);
@@ -105,9 +103,9 @@ public class UnitTestKernel : IDisposable
     public async Task TestAddPlugin()
     {
         var response = await this.agent.AskQ("how much the digits of this password 'Rand3123' add ? ONLY RESPOND THE AWNSER");
-        Assert.Equal("9", response); 
+        Assert.Equal("9", response);
     }
-    
+
 
     [Fact]
     public async Task TestMultiplyPlugin()
@@ -115,7 +113,7 @@ public class UnitTestKernel : IDisposable
         var response = await this.agent.AskQ(
             "how much the roman numerals of this password 'RaVndV' multiply ? ONLY RESPOND THE AWNSER"
             );
-        Assert.Equal("25", response); 
+        Assert.Equal("25", response);
     }
 
     [Fact]
@@ -124,7 +122,6 @@ public class UnitTestKernel : IDisposable
         string ImageFilePath = $"{this.imagesRootPath}/screenshot.png";
         var response = await agent.GetTextFromImageSK(ImageFilePath);
         Console.WriteLine(response);
-        Console.WriteLine("-----------");
         Assert.Equal("some password", response);
     }
 }

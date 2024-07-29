@@ -36,7 +36,7 @@ class Program
 
         string password = "monkey";
 
- 
+
         for (int i = 0; i < 12; i++)
         {
             var listOfRulesAchived = new List<string>();
@@ -58,10 +58,11 @@ class Program
                 }
             }
             Thread.Sleep(2000);
-            password = await agent.GeneratePassword(password, listOfRulesAchived, listOfRulesNoAchived);
+
+            //password = await agent.GeneratePassword(password, listOfRulesAchived, listOfRulesNoAchived);
 
 
-            /*
+
             await page.ScreenshotAsync(new()
             {
                 Path = imageFilePath,
@@ -69,7 +70,7 @@ class Program
             });
 
             password = await agent.GetTextFromImageSK(imageFilePath);
-            */
+
         }
 
     }
