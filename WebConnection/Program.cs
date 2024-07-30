@@ -18,12 +18,6 @@ class Program
         {
             throw new NullReferenceException("Apu Key not define");
         }
-        var imagesRootPath = config["IMAGES_ROOT_PATH"] ?? "";
-
-        if (string.IsNullOrEmpty(imagesRootPath))
-        {
-            throw new NullReferenceException("Define the path of the images");
-        }
 
         Agent agent = new Agent(apiKey);
 
@@ -31,8 +25,6 @@ class Program
         await using var browser = await playwright.Chromium.LaunchAsync(new() { Headless = false });
         var page = await browser.NewPageAsync();
         await page.GotoAsync("https://neal.fun/password-game/");
-
-        string imageFilePath = $"{imagesRootPath}screenshot.png";
 
         string password = "monkey";
 
@@ -57,19 +49,9 @@ class Program
                     listOfRulesAchived.Add($"- {ruleText}");
                 }
             }
-            Thread.Sleep(2000);
+            Thread.Sleep(1000);
 
-            //password = await agent.GeneratePassword(password, listOfRulesAchived, listOfRulesNoAchived);
-
-
-
-            await page.ScreenshotAsync(new()
-            {
-                Path = imageFilePath,
-                FullPage = true,
-            });
-
-            password = await agent.GetTextFromImageSK(imageFilePath);
+            password = await agent.GeneratePassword(password, listOfRulesAchived, listOfRulesNoAchived);
 
         }
 

@@ -4,13 +4,11 @@ using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
-using System.ComponentModel;
 using OpenTelemetry;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
-using System.Text.RegularExpressions;
 
 #pragma warning disable SKEXP0001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
 namespace KernelAgent;
@@ -35,10 +33,6 @@ public class Agent
 
 
         builder.Services.AddOpenAIChatCompletion("gpt-4o", this._apiKey);
-
-        builder.Services.AddSingleton<MathPlugin>();
-
-        builder.Plugins.AddFromObject(new MathPlugin());
 
         return builder.Build();
     }
@@ -164,220 +158,5 @@ public class Agent
             return response.Content;
         }
         return "";
-
     }
-
-    public async Task<string> AskQ(string question)
-    {
-
-        var resourceBuilder = ResourceBuilder
-                    .CreateDefault()
-                    .AddService("Agent Telemetry");
-
-        using var traceProvider = Sdk.CreateTracerProviderBuilder()
-            .SetResourceBuilder(resourceBuilder)
-            .AddSource("Microsoft.SemanticKernel*")
-            .AddSource("Telemetry.Agent")
-            .AddOtlpExporter(options => options.Endpoint = new Uri("http://localhost:4317"))
-            .Build();
-
-        using var meterProvider = Sdk.CreateMeterProviderBuilder()
-            .SetResourceBuilder(resourceBuilder)
-            .AddMeter("Microsoft.SemanticKernel*")
-            .AddOtlpExporter(options => options.Endpoint = new Uri("http://localhost:4317"))
-            .Build();
-
-        using var loggerFactory = LoggerFactory.Create(builder =>
-        {
-            // Add OpenTelemetry as a logging provider
-            builder.AddOpenTelemetry(options =>
-            {
-                options.SetResourceBuilder(resourceBuilder);
-                options.AddOtlpExporter(options => options.Endpoint = new Uri("http://localhost:4317"));
-                // Format log messages. This is default to false.
-                options.IncludeFormattedMessage = true;
-                options.IncludeScopes = true;
-            });
-            builder.SetMinimumLevel(MinLogLevel);
-        });
-
-        var chat = new ChatHistory
-        {
-            new()
-            {
-                Role = AuthorRole.User,
-                Content = question
-            }
-        };
-
-        var kernel = CreateKernelAgent(loggerFactory);
-
-
-        OpenAIPromptExecutionSettings openAIPromptExecutionSettings = new()
-        {
-            ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions
-        };
-
-        var chatCompletion = kernel.GetRequiredService<IChatCompletionService>();
-        var response = await chatCompletion.GetChatMessageContentAsync(
-                chat,
-                executionSettings: openAIPromptExecutionSettings,
-                kernel: kernel
-                );
-
-
-        if (response.Content != null)
-        {
-            return response.Content;
-        }
-        return "";
-    }
-
-
-    public async Task<string> GetTextFromImageSK(string ImageFilePath)
-    {
-        var resourceBuilder = ResourceBuilder
-                    .CreateDefault()
-                    .AddService("Agent Telemetry");
-
-        using var traceProvider = Sdk.CreateTracerProviderBuilder()
-            .SetResourceBuilder(resourceBuilder)
-            .AddSource("Microsoft.SemanticKernel*")
-            .AddSource("Telemetry.Agent")
-            .AddOtlpExporter(options => options.Endpoint = new Uri("http://localhost:4317"))
-            .Build();
-
-        using var meterProvider = Sdk.CreateMeterProviderBuilder()
-            .SetResourceBuilder(resourceBuilder)
-            .AddMeter("Microsoft.SemanticKernel*")
-            .AddOtlpExporter(options => options.Endpoint = new Uri("http://localhost:4317"))
-            .Build();
-
-        using var loggerFactory = LoggerFactory.Create(builder =>
-        {
-            // Add OpenTelemetry as a logging provider
-            builder.AddOpenTelemetry(options =>
-            {
-                options.SetResourceBuilder(resourceBuilder);
-                options.AddOtlpExporter(options => options.Endpoint = new Uri("http://localhost:4317"));
-                // Format log messages. This is default to false.
-                options.IncludeFormattedMessage = true;
-                options.IncludeScopes = true;
-            });
-            builder.SetMinimumLevel(MinLogLevel);
-        });
-
-        string systemPrompt = "you are a friendly assistant that help to pass the password game";
-        string userInput = """
-            base on the image can you suggest what to change on the password to achive all the requirements
-            ONLY RESPOND WITH THE PASSWORD
-            """;
-
-        var imageBytes = await File.ReadAllBytesAsync(ImageFilePath);
-
-        var chat = new ChatHistory(systemPrompt);
-
-        chat.AddUserMessage(
-                [
-                new TextContent(userInput),
-                    new ImageContent(imageBytes, "image/png")
-                ]);
-
-
-        var kernel = CreateKernelAgent(loggerFactory);
-
-        OpenAIPromptExecutionSettings openAIPromptExecutionSettings = new()
-        {
-            ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions
-        };
-
-        var chatCompletion = kernel.GetRequiredService<IChatCompletionService>();
-        var response = await chatCompletion.GetChatMessageContentAsync(
-                chat,
-                executionSettings: openAIPromptExecutionSettings,
-                kernel: kernel
-                );
-
-
-        if (response.Content != null)
-        {
-            return response.Content;
-        }
-        return "";
-    }
-}
-
-public class MathPlugin
-{
-    [KernelFunction("add_password_digits")]
-    [Description("This function take a password and add all the digits on it")]
-    [return: Description("return an int value that represent the sum of all the digits of the password")]
-    public int AddDigits(string password)
-    {
-        int sum = 0; 
-        foreach (char c in password)
-        {
-            if (char.IsDigit(c))
-            {
-                sum += (int)char.GetNumericValue(c);
-            }
-        }
-        return sum;
-    }
-    [KernelFunction("multiply_roman_numerals")]
-    [Description("This function take a password and multiply all roman numerals")]
-    [return: Description("return an int value that represent the multiplication of all roman numerals of the password")]
-    public int MultiplyRomanNumerals(string password)
-    {
-        string pattern = @"[MCDXLIV]+";
-        Regex regex = new Regex(pattern);
-        MatchCollection matches = regex.Matches(password);
-
-        if (matches.Count > 0)
-        {
-            int romanNumerals = 1;
-            foreach (Match match in matches)
-            {
-                int value = this.RomanToInt(match.Value);
-                romanNumerals *= value;
-            }
-
-            return romanNumerals;
-        }
-        return 0;
-    }
-
-    private int RomanToInt(string roman)
-    {
-        Dictionary<char, int> romanValues = new Dictionary<char, int>
-        {
-            {'I', 1},
-            {'V', 5},
-            {'X', 10},
-            {'L', 50},
-            {'C', 100},
-            {'D', 500},
-            {'M', 1000}
-        };
-
-        int total = 0;
-        int prevValue = 0;
-
-        for (int i = roman.Length - 1; i >= 0; i--)
-        {
-            int value = romanValues[roman[i]];
-            if (value < prevValue)
-            {
-                total -= value;
-            }
-            else
-            {
-                total += value;
-            }
-            prevValue = value;
-        }
-
-        return total;
-    }
-
 }
