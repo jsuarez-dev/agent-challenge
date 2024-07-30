@@ -12,12 +12,17 @@ dotnet user-secrets init --project WebConnection
 for PowerShell
 
 ```bash
-./load-env.ps1
+./load-env.ps1 WebConnection
 ```
 
 for linux
 
 ```bash
 chmod +x load-env.sh
-./load-env.sh
+./load-env.sh WebConnection
 ```
+
+```bash
+dotnet run --project WebConnection
+```
+
