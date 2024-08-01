@@ -57,11 +57,7 @@ class Program
                     listOfRulesAchived.Add($"- {ruleText}");
                 }
             }
-            Thread.Sleep(2000);
-
-            //password = await agent.GeneratePassword(password, listOfRulesAchived, listOfRulesNoAchived);
-
-
+            Thread.Sleep(1000);
 
             await page.ScreenshotAsync(new()
             {

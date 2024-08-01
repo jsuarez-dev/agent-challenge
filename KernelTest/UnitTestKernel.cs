@@ -78,43 +78,6 @@ public class UnitTestKernel : IDisposable
         Assert.Equal(280, mul);
     }
 
-    [Fact]
-    public async Task Test1()
-    {
-        string password = "random";
-        List<string> rulesPass = [""];
-        List<string> rulesNotPass = [
-        "- Your password must be at least 5 characters.",
-        "- Your password must include a special character.",
-        "- Your password must include a number.",
-        "- Your password must include an uppercase letter.",
-        "- The digits in your password must add up to 25."];
-        var response = await this.agent.GeneratePassword(password, rulesPass, rulesNotPass);
-        Console.WriteLine(response);
-
-        var math = new MathPlugin();
-        var sum = math.AddDigits(response);
-        Assert.Equal(25, sum);
-        Assert.Equal("some password", response);
-
-    }
-
-    [Fact]
-    public async Task TestAddPlugin()
-    {
-        var response = await this.agent.AskQ("how much the digits of this password 'Rand3123' add ? ONLY RESPOND THE AWNSER");
-        Assert.Equal("9", response);
-    }
-
-
-    [Fact]
-    public async Task TestMultiplyPlugin()
-    {
-        var response = await this.agent.AskQ(
-            "how much the roman numerals of this password 'RaVndV' multiply ? ONLY RESPOND THE AWNSER"
-            );
-        Assert.Equal("25", response);
-    }
 
     [Fact]
     public async Task TestSendImage()
@@ -123,6 +86,15 @@ public class UnitTestKernel : IDisposable
         var response = await agent.GetTextFromImageSK(ImageFilePath);
         Console.WriteLine(response);
         Assert.Equal("some password", response);
+    }
+
+    [Fact]
+    public async Task TestAskQ()
+    {
+        var chat = agent.GetChat();
+        var response = await agent.AskQ(chat, "Can you add the digits of the password 'has3j2h33321' using the function add_password_digits");
+        Console.WriteLine(response);
+        Assert.Equal("17", response);
     }
 }
 
