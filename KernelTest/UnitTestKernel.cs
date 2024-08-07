@@ -1,12 +1,11 @@
 
 using Microsoft.Extensions.Configuration;
-using KernelAgent;
+using WebConnection;
 
 namespace KernelTest;
 
 public class UnitTestKernel : IDisposable
 {
-    Agent agent;
     public string imagesRootPath = "";
     public UnitTestKernel()
     {
@@ -26,7 +25,6 @@ public class UnitTestKernel : IDisposable
             throw new NullReferenceException("Define the path of the images");
         }
 
-        agent = new Agent(apiKey);
     }
 
     public void Dispose()
@@ -38,7 +36,7 @@ public class UnitTestKernel : IDisposable
     public void TestAddFunction()
     {
         string password = "random997";
-        var math = new MathPlugin();
+        var math = new Plugins();
         int sum = math.AddDigits(password);
         Assert.Equal(25, sum);
 
@@ -61,7 +59,7 @@ public class UnitTestKernel : IDisposable
     {
 
         string password = "ranVdom997V";
-        var math = new MathPlugin();
+        var math = new Plugins();
         int mul = math.MultiplyRomanNumerals(password);
         Assert.Equal(25, mul);
 
@@ -79,50 +77,29 @@ public class UnitTestKernel : IDisposable
     }
 
     [Fact]
-    public async Task Test1()
+    public void TestDigitGeneration()
     {
-        string password = "random";
-        List<string> rulesPass = [""];
-        List<string> rulesNotPass = [
-        "- Your password must be at least 5 characters.",
-        "- Your password must include a special character.",
-        "- Your password must include a number.",
-        "- Your password must include an uppercase letter.",
-        "- The digits in your password must add up to 25."];
-        var response = await this.agent.GeneratePassword(password, rulesPass, rulesNotPass);
-        Console.WriteLine(response);
+        
+        var math = new Plugins();
+        string digits = math.GenerateDigits(25);
+        Assert.True(math.CheckPasswordDigits(digits, 25));
+        Assert.Equal(25, math.AddDigits(digits));
 
-        var math = new MathPlugin();
-        var sum = math.AddDigits(response);
-        Assert.Equal(25, sum);
-        Assert.Equal("some password", response);
-
+        digits = math.GenerateDigits(35);
+        Assert.False(math.CheckPasswordDigits(digits, 25));
+        Assert.Equal(35, math.AddDigits(digits));
     }
 
     [Fact]
-    public async Task TestAddPlugin()
+    public void TestRomanNumberGeneration()
     {
-        var response = await this.agent.AskQ("how much the digits of this password 'Rand3123' add ? ONLY RESPOND THE AWNSER");
-        Assert.Equal("9", response);
-    }
+        
+        var math = new Plugins();
+        string digits = math.GenerateRomanNumbers(25);
+        Assert.Equal(25, math.MultiplyRomanNumerals(digits));
 
-
-    [Fact]
-    public async Task TestMultiplyPlugin()
-    {
-        var response = await this.agent.AskQ(
-            "how much the roman numerals of this password 'RaVndV' multiply ? ONLY RESPOND THE AWNSER"
-            );
-        Assert.Equal("25", response);
-    }
-
-    [Fact]
-    public async Task TestSendImage()
-    {
-        string ImageFilePath = $"{this.imagesRootPath}/screenshot.png";
-        var response = await agent.GetTextFromImageSK(ImageFilePath);
-        Console.WriteLine(response);
-        Assert.Equal("some password", response);
+        digits = math.GenerateRomanNumbers(35);
+        Assert.Equal(35, math.MultiplyRomanNumerals(digits));
     }
 }
 

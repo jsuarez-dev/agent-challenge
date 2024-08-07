@@ -25,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\KernelAgent\KernelAgent.csproj" />
+    <ProjectReference Include="..\WebConnection\WebConnection.csproj" />
   </ItemGroup>
 
 </Project>

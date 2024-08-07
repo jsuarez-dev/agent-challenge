@@ -12,6 +12,7 @@ using OpenTelemetry.Resources;
 using OpenTelemetry;
 using OpenTelemetry.Trace;
 using OpenTelemetry.Metrics;
+using System.Text;
 
 
 namespace WebConnection;
@@ -57,11 +58,11 @@ class Program
 
         Kernel kernel = GetKernel(secrets.API_KEY, loggerFactory);
 
-        ChatHistory history = InitializePrompt();
 
         OpenAIPromptExecutionSettings settings = new OpenAIPromptExecutionSettings()
         {
-            ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions
+            ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
+            Temperature = 0
         };
 
         var chat = kernel.GetRequiredService<IChatCompletionService>();
@@ -74,10 +75,10 @@ class Program
 
         string ImageFilePath = $"{secrets.API_KEY}screenshot.png";
 
-        string password = "monkey";
+        string password = "monkeY1@";
 
 
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < 5; i++)
         {
             var listOfRulesAchived = new List<string>();
             var listOfRulesNoAchived = new List<string>();
@@ -117,6 +118,7 @@ class Program
             var imageBytes = await File.ReadAllBytesAsync(ImageFilePath);
 
            
+            ChatHistory history = InitializePrompt();
 
             history.AddUserMessage(
                     [
@@ -125,18 +127,61 @@ class Program
                     ]);
 
 
+            ChatHistory verificaton = InitializeVerificationPrompt();
+            bool ValidPassword = false;
+            int ReTries = 0;
 
+            while (!ValidPassword && ReTries < 3) 
+            {
+                var response = await chat.GetChatMessageContentAsync(
+                        history,
+                        executionSettings: settings,
+                        kernel: kernel
+                        );
 
-            var response = await chat.GetChatMessageContentAsync(
-                    history,
-                    executionSettings: settings,
-                    kernel: kernel
-                    );
+                password = response.Content ?? "";
 
-            password = response.Content ?? "";
+                string PromptVerification = $"""
+                    Verfied if the password: {password}
+                    satisfied the rules:
+                    {JoinRules(listOfRulesNoAchived, listOfRulesAchived)}
+
+                    ONLY RESPOND TRUE OR FALSE
+                    """;
+
+                verificaton.AddUserMessage(PromptVerification);
+                Thread.Sleep(100);
+
+                response = await chat.GetChatMessageContentAsync(
+                        verificaton,
+                        executionSettings: settings,
+                        kernel: kernel
+                        );
+
+                ValidPassword = bool.Parse( response.Content ?? "Error");
+                ReTries++;
+            }
+
 
         }
 
+    }
+
+    public static string JoinRules(List<string> noAchivedRules, List<string> achivedRules)
+    {
+        StringBuilder sbMessage = new StringBuilder();
+
+        sbMessage.AppendLine("Rules:");
+        foreach (var rule in achivedRules)
+        {
+            sbMessage.AppendLine(rule);
+        }
+        foreach (var rule in noAchivedRules)
+        {
+            sbMessage.AppendLine(rule);
+
+        }
+        return sbMessage.ToString();
     }
 
 
@@ -184,6 +229,56 @@ class Program
     {
         string systemPrompt = "you are a friendly assistant that help to pass the password game";
 
+        var chat = new ChatHistory(systemPrompt);
+
+        return chat;
+    }
+    public static ChatHistory InitializeVerificationPrompt()
+    {
+        const string systemPrompt = """
+        You are a helpfull assistand that verified passwords
+        
+        ----------
+        Exmaple 1 :
+
+        Requirements:
+        (1) Your password must be at least 5 characters.
+        (2) Your password must include a special character.
+        (3) Your password must include a number.
+        (4) Your password must include an uppercase letter.
+        (5) The digits in your password must add up to 15.
+
+        Password: Fwils!537
+        
+        - "Fwils!537" does satisfied the requiement (1) because is 9 caracters long.
+        - "Fwils!537" does satisfied the requiement (2) because inclued the special caracter "!" .
+        - "Fwils!537" does satisfied the requiement (3) because inclued 3 numbers "537".
+        - "Fwils!537" does satisfied the requiement (4) because "F" is capital letter.
+        - "Fwils!537" does satisfied the requiement (5) because the digits "537" add up to 15, in other words 5+3+7=15.
+
+        The result is TRUE
+
+        ----------
+        Exmaple 2 :
+
+        Requirements:
+        (1) Your password must be at least 5 characters.
+        (2) Your password must include a special character.
+        (3) Your password must include a number.
+        (4) Your password must include an uppercase letter.
+        (5) The digits in your password must add up to 25.
+
+        Password: Fwils!537
+        
+        - "Fwils537" does satisfied the requiement (1) because is 9 caracters long.
+        - "Fwils537" does not satisfied the requiement (2) because does not include any special caracter .
+        - "Fwils537" does satisfied the requiement (3) because inclued 3 numbers "537".
+        - "Fwils537" does satisfied the requiement (4) because "F" is capital letter.
+        - "Fwils537" does not satisfied the requiement (5) because the digits "537" does not add up to 25, in other words 5+3+7=15 != 25.
+
+        The result is FALSE
+
+        """;
         var chat = new ChatHistory(systemPrompt);
 
         return chat;
