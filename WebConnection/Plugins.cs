@@ -14,9 +14,11 @@ public class Plugins
     public bool CheckPasswordDigits(string password, int value)
     {
         if (password == null || value == 0)
-            { return false; }
-        else if (string.IsNullOrEmpty(password)) {
-            return false; }
+        { return false; }
+        else if (string.IsNullOrEmpty(password))
+        {
+            return false;
+        }
 
         int sum = this.AddDigits(password);
         if (value == sum)
@@ -32,7 +34,7 @@ public class Plugins
     [return: Description("return an int value that represent the sum of all the digits of the PASSWORD")]
     public int AddDigits(string password)
     {
-        int sum = 0; 
+        int sum = 0;
         foreach (char c in password)
         {
             if (char.IsDigit(c))
@@ -68,8 +70,8 @@ public class Plugins
 
 
     [KernelFunction("generate_roman_numbers")]
-    [Description("This function generate random Roman Numbers that multiply up to an spesific VALUE ")]
-    [return: Description("return an string of Roman Numbers that mulptiply up to the give it VALUE")]
+    [Description("This function generate random Roman Numerals that multiply up to an spesific VALUE ")]
+    [return: Description("return an string of Roman Numerals that mulptiply up to the give it VALUE")]
     public string GenerateRomanNumbers(int value)
     {
         Random random = new Random();
