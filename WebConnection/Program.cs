@@ -21,51 +21,22 @@ class Program
 {
     static async Task Main()
     {
+
+        // Get Secrets
         var secrets = GetSecrets();
-        var resourceBuilder = ResourceBuilder
-                   .CreateDefault()
-                   .AddService("Agent Telemetry");
-
-        using var traceProvider = Sdk.CreateTracerProviderBuilder()
-            .SetResourceBuilder(resourceBuilder)
-            .AddSource("Microsoft.SemanticKernel*")
-            .AddSource("Telemetry.Agent")
-            .AddOtlpExporter(options => options.Endpoint = new Uri("http://localhost:4317"))
-            .Build();
-
-        using var meterProvider = Sdk.CreateMeterProviderBuilder()
-            .SetResourceBuilder(resourceBuilder)
-            .AddMeter("Microsoft.SemanticKernel*")
-            .AddOtlpExporter(options => options.Endpoint = new Uri("http://localhost:4317"))
-            .Build();
-
-        using var loggerFactory = LoggerFactory.Create(builder =>
-        {
-            // Add OpenTelemetry as a logging provider
-            builder.AddOpenTelemetry(options =>
-            {
-                options.SetResourceBuilder(resourceBuilder);
-                options.AddOtlpExporter(options => options.Endpoint = new Uri("http://localhost:4317"));
-                // Format log messages. This is default to false.
-                options.IncludeFormattedMessage = true;
-                options.IncludeScopes = true;
-            });
-            builder.SetMinimumLevel(LogLevel.Trace);
-
-        });
 
         // Kernel Configuration
 
-        Kernel kernel = GetKernel(secrets.API_KEY, loggerFactory);
+        Kernel kernel = GetKernel(secrets.API_KEY);
 
 
         OpenAIPromptExecutionSettings settings = new OpenAIPromptExecutionSettings()
         {
-            ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
             Temperature = 0.7
         };
 
         var chat = kernel.GetRequiredService<IChatCompletionService>();
+
         // Web Access
 
         using var playwright = await Playwright.CreateAsync();
@@ -73,55 +44,52 @@ class Program
         var page = await browser.NewPageAsync();
         await page.GotoAsync("https://neal.fun/password-game/");
 
-        string ImageFilePath = $"{secrets.IMAGES_ROOT_PATH}screenshot.png";
 
-        string password = "monkeY3@";
+        string password = "monkey";
 
-        await page.EvaluateAsync("""
-                const container = document.getElementsByClassName('password-box');
+        ChatHistory history = InitializePrompt();
 
-                const label = document.createElement('label');
-                label.textContent = 'ProseMirror';
-                label.style.display = 'inline';
-                label.style.backgroundColor = '#ffc7c7';
-                label.style.fontSize = '30px';
-                label.style.color = '#333';
-                label.style.marginBottom = '5px'
-                label.style.marginTop = '5px'
-                label.style.border = 'solid 1px black'
-
-                container[0].appendChild(label);                
-            """);
-
-        await page.Locator(".ProseMirror").FillAsync(password);
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < 8; i++)
         {
 
+            var ListOfRulesAchived = new StringBuilder();
+            var ListOfRulesNoAchived = new StringBuilder();
+            await page.Locator(".ProseMirror").FillAsync(password);
+            foreach (var rule in await page.Locator("div.rule").AllAsync())
+            {
+                var names = await rule.EvaluateAsync("node => node.className");
+
+                if (names?.ToString().IndexOf("rule-error") != -1)
+                {
+                    string ruleText = await rule.Locator("div.rule-desc").TextContentAsync() ?? "";
+                    ListOfRulesNoAchived.AppendLine($"- {ruleText}");
+                }
+                else
+                {
+                    string ruleText = await rule.Locator("div.rule-desc").TextContentAsync() ?? "";
+                    ListOfRulesAchived.AppendLine($"- {ruleText}");
+                }
+            }
 
             Thread.Sleep(2000);
 
-            await page.ScreenshotAsync(new()
-            {
-                Path = ImageFilePath,
-                FullPage = true,
-            });
+            string UserInput = $"""
+                you are a agent which generate a improve Passwords
 
-            string userInput = """
+                you suggested this password '{password}', that password satisfied this rules:
+
+                {ListOfRulesAchived.ToString()}
+
+                But not this rules:
+
+                {ListOfRulesAchived.ToString()}
+
                 base on the image can you suggest what to change on the password to achieve all the requirements
                 ONLY RESPOND WITH THE PASSWORD
                 """;
 
-            var imageBytes = await File.ReadAllBytesAsync(ImageFilePath);
 
-
-            ChatHistory history = InitializePrompt();
-
-            history.AddUserMessage(
-                    [
-                    new TextContent(userInput),
-                    new ImageContent(imageBytes, "image/png")
-                    ]);
-
+            history.AddUserMessage(UserInput);
 
 
             var response = await chat.GetChatMessageContentAsync(
@@ -132,31 +100,6 @@ class Program
 
             password = response.Content ?? "";
 
-
-            string NavigationPrompt = $"""
-                base on the image generate a Javascript script that access to the element that contain the password and insert the password:{password}
-                The ClassName of the element is on black square
-                ONLY RESPOND WITH THE CODE
-                """;
-
-
-            ChatHistory NavigationHistory = InitializePromptToNavigate();
-
-            NavigationHistory.AddUserMessage(
-                    [
-                    new TextContent(NavigationPrompt),
-                    new ImageContent(imageBytes, "image/png")
-                    ]);
-
-            response = await chat.GetChatMessageContentAsync(
-                    NavigationHistory,
-                    executionSettings: settings,
-                    kernel: kernel
-                    );
-
-            string script = CleanJsScript(response.Content ?? "");
-            Console.WriteLine(script);
-            await page.EvaluateAsync(script);
         }
 
     }
@@ -209,28 +152,5 @@ class Program
         var chat = new ChatHistory(systemPrompt);
 
         return chat;
-    }
-    public static ChatHistory InitializePromptToNavigate()
-    {
-        string systemPrompt = "You are assistant tha generate JavaScript code to interact with a website";
-
-        var chat = new ChatHistory(systemPrompt);
-
-        return chat;
-    }
-    static string CleanJsScript(string input)
-    {
-        StringBuilder result = new StringBuilder();
-        string[] lines = input.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
-
-        foreach (var line in lines)
-        {
-            if (!line.TrimStart().StartsWith("```"))
-            {
-                result.AppendLine(line.Trim());
-            }
-        }
-
-        return result.ToString();
     }
 }
