@@ -107,7 +107,7 @@ class Program
             });
 
             string userInput = """
-                base on the image can you suggest what to change on the password to achive all the requirements
+                base on the image can you suggest what to change on the password to achieve all the requirements
                 ONLY RESPOND WITH THE PASSWORD
                 """;
 
@@ -123,7 +123,7 @@ class Program
                     ]);
 
 
-            
+
             var response = await chat.GetChatMessageContentAsync(
                     history,
                     executionSettings: settings,
@@ -131,7 +131,7 @@ class Program
                     );
 
             password = response.Content ?? "";
-            
+
 
             string NavigationPrompt = $"""
                 base on the image generate a Javascript script that access to the element that contain the password and insert the password:{password}
@@ -166,11 +166,11 @@ class Program
     {
         var config = new ConfigurationBuilder().AddUserSecrets<Program>().Build();
 
-        var API_KEY = config["OPENAI_API_KEY"];
+        var API_KEY = config["OPEN_AI_API_KEY"];
 
         if (API_KEY == null)
         {
-            throw new NullReferenceException("Apu Key not define");
+            throw new NullReferenceException("Api Key not define");
         }
         var IMAGES_ROOT_PATH = config["IMAGES_ROOT_PATH"] ?? "";
 
@@ -212,7 +212,7 @@ class Program
     }
     public static ChatHistory InitializePromptToNavigate()
     {
-        string systemPrompt = "You are assitant tha genereate JavaScript code to interact with a webside";
+        string systemPrompt = "You are assistant tha generate JavaScript code to interact with a website";
 
         var chat = new ChatHistory(systemPrompt);
 

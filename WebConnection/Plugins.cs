@@ -9,7 +9,7 @@ public class Plugins
 {
 
     [KernelFunction("check_password_add_rule")]
-    [Description("This function check if a PASSWORD add up to spesific VALUE on the rule")]
+    [Description("This function check if a PASSWORD add up to specific VALUE on the rule")]
     [return: Description("return True if the PASSWORD add to the give VALUE, False other wise")]
     public bool CheckPasswordDigits(string password, int value)
     {
@@ -47,7 +47,7 @@ public class Plugins
 
 
     [KernelFunction("generate_digits")]
-    [Description("This function generate random digits that add up to an spesific VALUE ")]
+    [Description("This function generate random digits that add up to an specific VALUE ")]
     [return: Description("return an string of digits that add to the give it VALUE")]
     public string GenerateDigits(int value)
     {
@@ -70,8 +70,8 @@ public class Plugins
 
 
     [KernelFunction("generate_roman_numbers")]
-    [Description("This function generate random Roman Numerals that multiply up to an spesific VALUE ")]
-    [return: Description("return an string of Roman Numerals that mulptiply up to the give it VALUE")]
+    [Description("This function generate random Roman Numerals that multiply up to an specific VALUE ")]
+    [return: Description("return an string of Roman Numerals that multiply up to the give it VALUE")]
     public string GenerateRomanNumbers(int value)
     {
         Random random = new Random();
