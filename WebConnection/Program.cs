@@ -21,7 +21,7 @@ class Program
 {
     static async Task Main()
     {
-        var secrets = GetSecrets();
+        // Open Telemetry
         var resourceBuilder = ResourceBuilder
                    .CreateDefault()
                    .AddService("Agent Telemetry");
@@ -53,6 +53,9 @@ class Program
             builder.SetMinimumLevel(LogLevel.Trace);
 
         });
+
+        // Add secrets
+        var secrets = GetSecrets();
 
         // Kernel Configuration
 
