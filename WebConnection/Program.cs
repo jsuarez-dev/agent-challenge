@@ -21,13 +21,45 @@ class Program
 {
     static async Task Main()
     {
+        // Open Telemetry
+        var resourceBuilder = ResourceBuilder
+                   .CreateDefault()
+                   .AddService("Agent Telemetry");
+
+        using var traceProvider = Sdk.CreateTracerProviderBuilder()
+            .SetResourceBuilder(resourceBuilder)
+            .AddSource("Microsoft.SemanticKernel*")
+            .AddSource("Telemetry.Agent")
+            .AddOtlpExporter(options => options.Endpoint = new Uri("http://localhost:4317"))
+            .Build();
+
+        using var meterProvider = Sdk.CreateMeterProviderBuilder()
+            .SetResourceBuilder(resourceBuilder)
+            .AddMeter("Microsoft.SemanticKernel*")
+            .AddOtlpExporter(options => options.Endpoint = new Uri("http://localhost:4317"))
+            .Build();
+
+        using var loggerFactory = LoggerFactory.Create(builder =>
+        {
+            // Add OpenTelemetry as a logging provider
+            builder.AddOpenTelemetry(options =>
+            {
+                options.SetResourceBuilder(resourceBuilder);
+                options.AddOtlpExporter(options => options.Endpoint = new Uri("http://localhost:4317"));
+                // Format log messages. This is default to false.
+                options.IncludeFormattedMessage = true;
+                options.IncludeScopes = true;
+            });
+            builder.SetMinimumLevel(LogLevel.Trace);
+
+        });
 
         // Get Secrets
         var secrets = GetSecrets();
 
         // Kernel Configuration
 
-        Kernel kernel = GetKernel(secrets.API_KEY);
+        Kernel kernel = GetKernel(secrets.API_KEY, loggerFactory);
 
 
         OpenAIPromptExecutionSettings settings = new OpenAIPromptExecutionSettings()
@@ -137,10 +169,6 @@ class Program
 
 
         builder.Services.AddOpenAIChatCompletion("gpt-4o", API_KEY);
-
-        builder.Services.AddSingleton<Plugins>();
-
-        builder.Plugins.AddFromObject(new Plugins());
 
         return builder.Build();
     }
