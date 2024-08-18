@@ -80,28 +80,11 @@ class Program
 
         string password = "monkeY3@";
 
-        await page.EvaluateAsync("""
-                const container = document.getElementsByClassName('password-box');
-
-                const label = document.createElement('label');
-                label.textContent = 'ProseMirror';
-                label.style.display = 'inline';
-                label.style.backgroundColor = '#ffc7c7';
-                label.style.fontSize = '30px';
-                label.style.color = '#333';
-                label.style.marginBottom = '5px'
-                label.style.marginTop = '5px'
-                label.style.border = 'solid 1px black'
-
-                container[0].appendChild(label);                
-            """);
-
-        await page.Locator(".ProseMirror").FillAsync(password);
         for (int i = 0; i < 10; i++)
         {
-
-
             Thread.Sleep(2000);
+
+            await page.Locator(".ProseMirror").FillAsync(password);
 
             await page.ScreenshotAsync(new()
             {
@@ -134,32 +117,6 @@ class Program
                     );
 
             password = response.Content ?? "";
-
-
-            string NavigationPrompt = $"""
-                base on the image generate a Javascript script that access to the element that contain the password and insert the password:{password}
-                The ClassName of the element is on black square
-                ONLY RESPOND WITH THE CODE
-                """;
-
-
-            ChatHistory NavigationHistory = InitializePromptToNavigate();
-
-            NavigationHistory.AddUserMessage(
-                    [
-                    new TextContent(NavigationPrompt),
-                    new ImageContent(imageBytes, "image/png")
-                    ]);
-
-            response = await chat.GetChatMessageContentAsync(
-                    NavigationHistory,
-                    executionSettings: settings,
-                    kernel: kernel
-                    );
-
-            string script = CleanJsScript(response.Content ?? "");
-            Console.WriteLine(script);
-            await page.EvaluateAsync(script);
         }
 
     }
@@ -213,27 +170,5 @@ class Program
 
         return chat;
     }
-    public static ChatHistory InitializePromptToNavigate()
-    {
-        string systemPrompt = "You are assistant tha generate JavaScript code to interact with a website";
 
-        var chat = new ChatHistory(systemPrompt);
-
-        return chat;
-    }
-    static string CleanJsScript(string input)
-    {
-        StringBuilder result = new StringBuilder();
-        string[] lines = input.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
-
-        foreach (var line in lines)
-        {
-            if (!line.TrimStart().StartsWith("```"))
-            {
-                result.AppendLine(line.Trim());
-            }
-        }
-
-        return result.ToString();
-    }
 }
