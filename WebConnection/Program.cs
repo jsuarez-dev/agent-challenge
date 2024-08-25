@@ -83,7 +83,6 @@ class Program
 
         for (int i = 0; i < 8; i++)
         {
-
             var ListOfRulesAchived = new StringBuilder();
             var ListOfRulesNoAchived = new StringBuilder();
             await page.Locator(".ProseMirror").FillAsync(password);
@@ -116,13 +115,11 @@ class Program
 
                 {ListOfRulesAchived.ToString()}
 
-                base on the image can you suggest what to change on the password to achieve all the requirements
+                base on the rules can you suggest what to change on the password to achieve all the requirements
                 ONLY RESPOND WITH THE PASSWORD
                 """;
 
-
             history.AddUserMessage(UserInput);
-
 
             var response = await chat.GetChatMessageContentAsync(
                     history,
@@ -131,9 +128,7 @@ class Program
                     );
 
             password = response.Content ?? "";
-
         }
-
     }
 
 
@@ -157,6 +152,7 @@ class Program
         return (API_KEY, IMAGES_ROOT_PATH);
 
     }
+
     public static Kernel GetKernel(string API_KEY, ILoggerFactory? loggerFactory = null)
     {
 
