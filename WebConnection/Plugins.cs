@@ -1,51 +1,12 @@
-﻿
-using Microsoft.SemanticKernel;
+﻿using Microsoft.SemanticKernel;
 using System.ComponentModel;
 using System.Text;
 using System.Text.RegularExpressions;
 
 namespace WebConnection;
+
 public class Plugins
 {
-
-    [KernelFunction("check_password_add_rule")]
-    [Description("This function check if a PASSWORD add up to specific VALUE on the rule")]
-    [return: Description("return True if the PASSWORD add to the give VALUE, False other wise")]
-    public bool CheckPasswordDigits(string password, int value)
-    {
-        if (password == null || value == 0)
-        { return false; }
-        else if (string.IsNullOrEmpty(password))
-        {
-            return false;
-        }
-
-        int sum = this.AddDigits(password);
-        if (value == sum)
-        {
-            return true;
-        }
-        return false;
-
-    }
-
-    [KernelFunction("add_password_digits")]
-    [Description("This function take a PASSWORD and add all the digits on it")]
-    [return: Description("return an int value that represent the sum of all the digits of the PASSWORD")]
-    public int AddDigits(string password)
-    {
-        int sum = 0;
-        foreach (char c in password)
-        {
-            if (char.IsDigit(c))
-            {
-                sum += (int)char.GetNumericValue(c);
-            }
-        }
-        return sum;
-    }
-
-
     [KernelFunction("generate_digits")]
     [Description("This function generate random digits that add up to an specific VALUE ")]
     [return: Description("return an string of digits that add to the give it VALUE")]
@@ -96,11 +57,38 @@ public class Plugins
         return sb.ToString();
     }
 
+    private bool CheckPasswordDigits(string password, int value)
+    {
+        if (password == null || value == 0)
+        { return false; }
+        else if (string.IsNullOrEmpty(password))
+        {
+            return false;
+        }
 
-    [KernelFunction("multiply_roman_numerals")]
-    [Description("This function take a password and multiply all roman numerals")]
-    [return: Description("return an int value that represent the multiplication of all roman numerals of the password")]
-    public int MultiplyRomanNumerals(string password)
+        int sum = this.AddDigits(password);
+        if (value == sum)
+        {
+            return true;
+        }
+        return false;
+
+    }
+
+    private int AddDigits(string password)
+    {
+        int sum = 0;
+        foreach (char c in password)
+        {
+            if (char.IsDigit(c))
+            {
+                sum += (int)char.GetNumericValue(c);
+            }
+        }
+        return sum;
+    }
+
+    private int MultiplyRomanNumerals(string password)
     {
         string pattern = @"[MCDXLIV]+";
         Regex regex = new Regex(pattern);

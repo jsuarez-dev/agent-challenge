@@ -82,9 +82,9 @@ class Program
 
         for (int i = 0; i < 10; i++)
         {
-            Thread.Sleep(2000);
-
             await page.Locator(".ProseMirror").FillAsync(password);
+
+            Thread.Sleep(1000);
 
             await page.ScreenshotAsync(new()
             {
@@ -99,7 +99,6 @@ class Program
 
             var imageBytes = await File.ReadAllBytesAsync(ImageFilePath);
 
-
             ChatHistory history = InitializePrompt();
 
             history.AddUserMessage(
@@ -107,8 +106,6 @@ class Program
                     new TextContent(userInput),
                     new ImageContent(imageBytes, "image/png")
                     ]);
-
-
 
             var response = await chat.GetChatMessageContentAsync(
                     history,
@@ -118,7 +115,6 @@ class Program
 
             password = response.Content ?? "";
         }
-
     }
 
 
@@ -140,8 +136,8 @@ class Program
         }
 
         return (API_KEY, IMAGES_ROOT_PATH);
-
     }
+
     public static Kernel GetKernel(string API_KEY, ILoggerFactory? loggerFactory = null)
     {
 
