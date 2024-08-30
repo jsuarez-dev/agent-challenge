@@ -54,13 +54,14 @@ class Program
 
         });
 
+        var logger = loggerFactory.CreateLogger("console");
+
         // Add secrets
         var secrets = GetSecrets();
 
         // Kernel Configuration
 
         Kernel kernel = GetKernel(secrets.API_KEY, loggerFactory);
-
 
         OpenAIPromptExecutionSettings settings = new OpenAIPromptExecutionSettings()
         {
@@ -97,12 +98,9 @@ class Program
             """);
 
         await page.Locator(".ProseMirror").FillAsync(password);
+
         for (int i = 0; i < 10; i++)
         {
-
-
-            Thread.Sleep(2000);
-
             await page.ScreenshotAsync(new()
             {
                 Path = ImageFilePath,
@@ -137,7 +135,8 @@ class Program
 
 
             string NavigationPrompt = $"""
-                base on the image generate a Javascript script that access to the element that contain the password and insert the password:{password}
+                base on the image generate a Javascript script that access to the 
+                element that contain the password and insert the password:{password}
                 The ClassName of the element is on black square
                 ONLY RESPOND WITH THE CODE
                 """;
@@ -158,10 +157,13 @@ class Program
                     );
 
             string script = CleanJsScript(response.Content ?? "");
-            Console.WriteLine(script);
-            await page.EvaluateAsync(script);
-        }
 
+            logger.LogDebug(script);
+
+            await page.EvaluateAsync(script);
+
+            Thread.Sleep(1000);
+        }
     }
 
 
@@ -213,6 +215,7 @@ class Program
 
         return chat;
     }
+
     public static ChatHistory InitializePromptToNavigate()
     {
         string systemPrompt = "You are assistant tha generate JavaScript code to interact with a website";
@@ -221,6 +224,8 @@ class Program
 
         return chat;
     }
+
+
     static string CleanJsScript(string input)
     {
         StringBuilder result = new StringBuilder();
