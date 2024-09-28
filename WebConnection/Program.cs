@@ -54,6 +54,8 @@ class Program
 
         });
 
+        var logger = loggerFactory.CreateLogger("Agent");
+
         // Get Secrets
         var secrets = GetSecrets();
 
@@ -64,7 +66,7 @@ class Program
 
         OpenAIPromptExecutionSettings settings = new OpenAIPromptExecutionSettings()
         {
-            Temperature = 0.7
+            Temperature = 0.5
         };
 
         var chat = kernel.GetRequiredService<IChatCompletionService>();
@@ -79,13 +81,14 @@ class Program
 
         string password = "monkey";
 
-        ChatHistory history = InitializePrompt();
-
-        for (int i = 0; i < 8; i++)
+        for (int i = 0; i < 10; i++)
         {
+            ChatHistory history = InitializePrompt();
+
             var ListOfRulesAchived = new StringBuilder();
             var ListOfRulesNoAchived = new StringBuilder();
             await page.Locator(".ProseMirror").FillAsync(password);
+            int ruleId = 1;
             foreach (var rule in await page.Locator("div.rule").AllAsync())
             {
                 var names = await rule.EvaluateAsync("node => node.className");
@@ -93,29 +96,30 @@ class Program
                 if (names?.ToString().IndexOf("rule-error") != -1)
                 {
                     string ruleText = await rule.Locator("div.rule-desc").TextContentAsync() ?? "";
-                    ListOfRulesNoAchived.AppendLine($"- {ruleText}");
+                    ListOfRulesNoAchived.AppendLine($"({ruleId}) {ruleText}.");
                 }
                 else
                 {
                     string ruleText = await rule.Locator("div.rule-desc").TextContentAsync() ?? "";
-                    ListOfRulesAchived.AppendLine($"- {ruleText}");
+                    ListOfRulesAchived.AppendLine($"({ruleId}) {ruleText}.");
                 }
+                ruleId ++;
             }
 
-            Thread.Sleep(2000);
+            Thread.Sleep(1000);
 
             string UserInput = $"""
                 you are a agent which generate a improve Passwords
 
-                you suggested this password '{password}', that password satisfied this rules:
+                you suggested this password '{password}', that password satisfied these rules:
 
                 {ListOfRulesAchived.ToString()}
 
-                But not this rules:
+                But not these rules:
 
                 {ListOfRulesAchived.ToString()}
 
-                base on the rules can you suggest what to change on the password to achieve all the requirements
+                base on the rules can you change the password to achieve all the requirements
                 ONLY RESPOND WITH THE PASSWORD
                 """;
 
@@ -128,6 +132,7 @@ class Program
                     );
 
             password = response.Content ?? "";
+            logger.LogInformation($"Password : {password}");
         }
     }
 
@@ -171,7 +176,37 @@ class Program
 
     public static ChatHistory InitializePrompt()
     {
-        string systemPrompt = "you are a friendly assistant that help to pass the password game";
+        string systemPrompt = """
+        you are a friendly assistant that help to pass the password game
+
+        Exmaple:
+
+        you are a agent which generate a improve Passwords
+
+        you suggested this password 'Fwils5', that password satisfied these rules:
+
+            (1) Your password must be at least 5 characters.
+            (2) Your password must include a special character.
+            (3) Your password must include a number.
+            (4) Your password must include an uppercase letter.
+
+        But not these rules:
+
+            (5) The digits in your password must add up to 15.
+
+        base on the rules can you change the password to achieve all the requirements
+        ONLY RESPOND WITH THE PASSWORD
+
+        - To satisfied the requiement (1) you could start with five ramdon characters like: fwils
+        - To satisfied the requiement (2) you add an special caracter at the end like: fwils!
+        - To satisfied the requiement (3) you add a ramdon number between 0-9 at the end like: fwils!5
+        - To satisfied the requiement (4) you change any character like: Fwils! 
+        - To satisfied the requiement (5) you could use the 5 that is already in it and add 7 and 3, because "5+3+7=15" and will end like: Fwils!537
+        
+        Response:
+        
+        Fwils!537
+        """;
 
         var chat = new ChatHistory(systemPrompt);
 
