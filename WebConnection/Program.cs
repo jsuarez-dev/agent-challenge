@@ -54,6 +54,8 @@ class Program
 
         });
 
+        var logger = loggerFactory.CreateLogger("Agent");
+
         // Add secrets
         var secrets = GetSecrets();
 
@@ -65,7 +67,7 @@ class Program
         OpenAIPromptExecutionSettings settings = new OpenAIPromptExecutionSettings()
         {
             ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
-            Temperature = 0.7
+            Temperature = 0.5
         };
 
         var chat = kernel.GetRequiredService<IChatCompletionService>();
@@ -78,7 +80,7 @@ class Program
 
         string ImageFilePath = $"{secrets.IMAGES_ROOT_PATH}screenshot.png";
 
-        string password = "monkeY3@";
+        string password = "monkey";
 
         for (int i = 0; i < 10; i++)
         {
@@ -114,6 +116,8 @@ class Program
                     );
 
             password = response.Content ?? "";
+
+            logger.LogInformation($"Password : {password}");
         }
     }
 
