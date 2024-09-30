@@ -177,35 +177,40 @@ class Program
     public static ChatHistory InitializePrompt()
     {
         string systemPrompt = """
-        you are a friendly assistant that help to pass the password game
+            you are a friendly assistant that helps to pass the password game
 
-        Exmaple:
+            ---------------------------------------------------------
+            Example:
 
-        you are a agent which generate a improve Passwords
+            you are an agent which generates improved passwords
 
-        you suggested this password 'Fwils5', that password satisfied these rules:
+            you suggested this password 'Fwils5', that password satisfied these rules:
 
-            (1) Your password must be at least 5 characters.
-            (2) Your password must include a special character.
-            (3) Your password must include a number.
-            (4) Your password must include an uppercase letter.
+                (1) Your password must be at least 5 characters.
+                (2) Your password must include a special character.
+                (3) Your password must include a number.
+                (4) Your password must include an uppercase letter.
 
-        But not these rules:
+            But not these rules:
 
-            (5) The digits in your password must add up to 15.
+                (5) The digits in your password must add up to 15.
 
-        base on the rules can you change the password to achieve all the requirements
-        ONLY RESPOND WITH THE PASSWORD
+            based on the rules can you change the password to achieve all the requirements
+            ONLY RESPOND WITH THE PASSWORD
 
-        - To satisfied the requiement (1) you could start with five ramdon characters like: fwils
-        - To satisfied the requiement (2) you add an special caracter at the end like: fwils!
-        - To satisfied the requiement (3) you add a ramdon number between 0-9 at the end like: fwils!5
-        - To satisfied the requiement (4) you change any character like: Fwils! 
-        - To satisfied the requiement (5) you could use the 5 that is already in it and add 7 and 3, because "5+3+7=15" and will end like: Fwils!537
-        
-        Response:
-        
-        Fwils!537
+            - To satisfy the requirement (1) you could start with five random characters like: fwils
+            - To satisfy the requirement (2) you add a special character at the end like: fwils!
+            - To satisfy the requirement (3) you add a random number between 0-9 at the end like: fwils!5
+            - To satisfy the requirement (4) you change any character like: Fwils! 
+            - To satisfy the requirement (5) you could use the 5 that is already in it and add 7 and 3, because "5+3+7=15" and will end like: Fwils!537
+            
+            Response:
+            
+            Fwils!537
+
+            ---------------------------------------------------------
+            Request:
+
         """;
 
         var chat = new ChatHistory(systemPrompt);
