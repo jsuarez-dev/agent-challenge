@@ -66,7 +66,7 @@ class Program
         OpenAIPromptExecutionSettings settings = new OpenAIPromptExecutionSettings()
         {
             ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
-            Temperature = 0.7
+            Temperature = 0.5
         };
 
         var chat = kernel.GetRequiredService<IChatCompletionService>();
