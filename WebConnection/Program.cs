@@ -209,8 +209,6 @@ class Program
             Fwils!537
 
             ---------------------------------------------------------
-            Request:
-
         """;
 
         var chat = new ChatHistory(systemPrompt);
